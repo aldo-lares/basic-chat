@@ -3,8 +3,9 @@
 @{
     ViewData["Title"] = "Chat Interface";
     ViewData["Description"] = "A simple chat interface to test AID Win Projects.";
-    // Assume the API URL is provided through configuration and passed via ViewData or similar.
-    var apiUrl = ViewData["APIUrl"] ?? "https://your-api-url.com/api/chat"; 
+    // Get the API URLs directly from configuration
+    var chatApiUrl = ViewData["ChatApiUrl"]?.ToString() ?? "https://your-api-url.com/api/Conversation/chat";
+    var audioApiUrl = ViewData["AudioApiUrl"]?.ToString() ?? "https://your-api-url.com/api/Conversation/audio";
 }
 
 <style>
@@ -156,7 +157,9 @@
     <div id="sessionIdDisplay" class="session-id-header"></div>
 </div>
 
-<div id="chatHistory" class="chat-history" data-api="@apiUrl">
+<div id="chatHistory" class="chat-history" 
+    data-chat-api="@chatApiUrl"
+    data-audio-api="@audioApiUrl">
     <!-- Chat messages will be appended here -->
 </div>
 
@@ -197,7 +200,8 @@
         const chatHistory = document.getElementById('chatHistory');
         const messageInput = document.getElementById('messageInput');
         const sendButton = document.getElementById('sendButton');
-        const apiUrl = chatHistory.getAttribute('data-api');
+        const chatApiUrl = chatHistory.getAttribute('data-chat-api');
+        const audioApiUrl = chatHistory.getAttribute('data-audio-api');
         const micButton = document.getElementById('micButton');
         const recordingStatus = document.getElementById('recordingStatus');
 
@@ -248,7 +252,8 @@
                 reader.readAsDataURL(audioBlob);
                 reader.onloadend = () => {
                     const audioBase64 = reader.result;
-                    appendAudioMessage('You', audioBase64, 'you');
+                    // Instead of just displaying the audio, also send it to the API
+                    sendAudioMessage(audioBase64);
                 };
                 
                 // Stop all tracks to release the microphone
@@ -271,6 +276,79 @@
             if (mediaRecorder && isRecording) {
                 mediaRecorder.stop();
             }
+        }
+
+        function sendAudioMessage(audioBase64) {
+            // Append the audio message to the chat
+            appendAudioMessage('You', audioBase64, 'you');
+            
+            // Add typing indicator
+            const typingBubble = addTypingIndicator();
+            
+            // Post the audio message to the audio API endpoint
+            fetch(audioApiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    audioMessage: audioBase64,
+                    sessionId: sessionId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Replace typing indicator content with actual response
+                if (data && data.response) {
+                    // Find and remove the typing indicator
+                    const typingBubble = document.getElementById('typingBubble');
+                    if (typingBubble) {
+                        // Keep the title but replace the message content
+                        const messageElem = typingBubble.querySelector('.typing-indicator');
+                        if (messageElem) {
+                            // Replace typing dots with actual message
+                            messageElem.className = ''; // Remove typing-indicator class
+                            messageElem.innerHTML = data.response;
+                            
+                            // Remove the typing-message class from the bubble
+                            typingBubble.classList.remove('typing-message');
+                        }
+                    } else {
+                        // Fallback: if typing bubble is not found, add a new message
+                        appendMessage('AID Win', data.response, 'aidwin');
+                    }
+                    
+                    // Ensure we scroll to see the new content
+                    chatHistory.scrollTop = chatHistory.scrollHeight;
+                }
+            })
+            .catch(error => {
+                // Replace typing indicator with error message
+                const typingBubble = document.getElementById('typingBubble');
+                if (typingBubble) {
+                    // Keep the title but change it to System
+                    const titleElem = typingBubble.querySelector('.chat-title');
+                    if (titleElem) {
+                        titleElem.textContent = 'System';
+                    }
+                    
+                    // Replace typing dots with error message
+                    const messageElem = typingBubble.querySelector('.typing-indicator');
+                    if (messageElem) {
+                        messageElem.className = ''; // Remove typing-indicator class
+                        messageElem.textContent = 'Sorry, there was an error sending your audio message.';
+                        
+                        // Remove the typing-message class from the bubble
+                        typingBubble.classList.remove('typing-message');
+                    }
+                } else {
+                    // Fallback: if typing bubble is not found, add a new message
+                    appendMessage('System', 'Sorry, there was an error sending your audio message.', 'aidwin');
+                }
+                
+                console.error('Error sending audio:', error);
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+            });
         }
 
         function createWaveformBars(container, count = 20) {
@@ -328,8 +406,8 @@
             // Add typing indicator as a message bubble
             const typingBubble = addTypingIndicator();
             
-            // Post the message to the API including the session id
-            fetch(apiUrl, {
+            // Post the message to the text API endpoint
+            fetch(chatApiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

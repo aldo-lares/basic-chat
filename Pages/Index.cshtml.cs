@@ -15,6 +15,7 @@ public class IndexModel : PageModel
 
     public void OnGet()
     {
-        ViewData["APIUrl"] = _configuration["APIUrl"] ?? "https://your-api-url.com/api/chat";
+        ViewData["ChatApiUrl"] = _configuration["API:ChatEndpoint"];
+        ViewData["AudioApiUrl"] = _configuration["API:AudioEndpoint"];
     }
 }
