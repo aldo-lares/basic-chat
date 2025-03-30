@@ -285,6 +285,16 @@
             // Add typing indicator
             const typingBubble = addTypingIndicator();
             
+            // Extract the audio format from the base64 string
+            // Format is typically in the data:audio/FORMAT;base64 pattern
+            let audioFormat = 'webm'; // Default format
+            if (audioBase64.includes('data:audio/')) {
+                const formatMatch = audioBase64.match(/data:audio\/([^;]+);/);
+                if (formatMatch && formatMatch[1]) {
+                    audioFormat = formatMatch[1];
+                }
+            }
+            
             // Post the audio message to the audio API endpoint
             fetch(audioApiUrl, {
                 method: 'POST',
@@ -292,8 +302,9 @@
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    audioMessage: audioBase64,
-                    sessionId: sessionId
+                    audioData: audioBase64,
+                    sessionId: sessionId,
+                    audioFormat: audioFormat
                 })
             })
             .then(response => response.json())
