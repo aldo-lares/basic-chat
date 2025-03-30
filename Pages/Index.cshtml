@@ -1,0 +1,460 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Chat Interface";
+    ViewData["Description"] = "A simple chat interface to test AID Win Projects.";
+    // Assume the API URL is provided through configuration and passed via ViewData or similar.
+    var apiUrl = ViewData["APIUrl"] ?? "https://your-api-url.com/api/chat"; 
+}
+
+<style>
+    .chat-history {
+        height: 300px;
+        overflow-y: scroll;
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-bottom: 20px;
+    }
+    .chat-bubble {
+        max-width: 70%;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 10px;
+        position: relative;
+        clear: both;
+    }
+    .chat-bubble.you {
+        background-color: #daf8da;
+        float: right;
+        text-align: right;
+    }
+    .chat-bubble.aidwin {
+        background-color: #f1f0f0;
+        float: left;
+        text-align: left;
+    }
+    .chat-title {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    .input-container {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    .input-container textarea {
+        flex-grow: 1;
+        height: 80px;
+        resize: none;
+    }
+    .session-id-header {
+        margin-bottom: 10px;
+        font-size: 0.9em;
+        color: #333;
+    }
+    .typing-indicator {
+        display: inline-block;
+    }
+    .typing-indicator span {
+        height: 10px;
+        width: 10px;
+        border-radius: 50%;
+        background-color: #666;
+        display: inline-block;
+        margin-right: 3px;
+        animation: typing 1s infinite ease-in-out;
+    }
+    .typing-indicator span:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    .typing-indicator span:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    @@keyframes typing {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-5px); }
+        100% { transform: translateY(0px); }
+    }
+    
+    /* Audio recording and visualization styles */
+    #micButton, #sendButton {
+        background-color: #f8f9fa;
+        border: 1px solid #ccc;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    #sendButton {
+        background-color: #4CAF50;
+        color: white;
+        border-color: #4CAF50;
+    }
+    #sendButton:hover {
+        background-color: #45a049;
+    }
+    #micButton.recording {
+        background-color: #ff4d4d;
+        color: white;
+    }
+    .mic-icon, .send-icon {
+        width: 20px;
+        height: 20px;
+    }
+    .audio-message {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .audio-waveform {
+        flex-grow: 1;
+        height: 40px;
+        background-color: rgba(0,0,0,0.05);
+        border-radius: 5px;
+        position: relative;
+        overflow: hidden;
+    }
+    .waveform-bars {
+        display: flex;
+        align-items: center;
+        height: 100%;
+        justify-content: space-around;
+    }
+    .waveform-bar {
+        width: 3px;
+        background-color: #2d7bb9;
+        margin: 0 1px;
+    }
+    .play-button {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .recording-status {
+        color: #ff4d4d;
+        font-weight: bold;
+        margin-left: 10px;
+        display: none;
+    }
+</style>
+
+<div class="text-center">
+    <h2>Chat Interface</h2>
+    <div id="sessionIdDisplay" class="session-id-header"></div>
+</div>
+
+<div id="chatHistory" class="chat-history" data-api="@apiUrl">
+    <!-- Chat messages will be appended here -->
+</div>
+
+<div class="input-container">
+    <textarea id="messageInput" placeholder="Type your message..."></textarea>
+    <button id="sendButton" title="Send message">
+        <svg xmlns="http://www.w3.org/2000/svg" class="send-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+    </button>
+    <button id="micButton" title="Record audio message">
+        <svg xmlns="http://www.w3.org/2000/svg" class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+            <line x1="8" y1="23" x2="16" y2="23"></line>
+        </svg>
+    </button>
+    <span class="recording-status" id="recordingStatus">Recording...</span>
+</div>
+
+<script>
+    (function() {
+        // Generate a random 5-letter session id
+        function generateSessionId() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+            let sessionId = '';
+            for (let i = 0; i < 5; i++) {
+                sessionId += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return sessionId;
+        }
+        
+        const sessionId = generateSessionId();
+        document.getElementById('sessionIdDisplay').textContent = "Session ID: " + sessionId;
+
+        const chatHistory = document.getElementById('chatHistory');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const apiUrl = chatHistory.getAttribute('data-api');
+        const micButton = document.getElementById('micButton');
+        const recordingStatus = document.getElementById('recordingStatus');
+
+        // Audio recording variables
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+
+        sendButton.addEventListener('click', sendMessage);
+        micButton.addEventListener('click', toggleRecording);
+
+        // When Enter is pressed in the textarea (without Shift), trigger the send button.
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendButton.click();
+            }
+        });
+        
+        // Audio recording functions
+        async function toggleRecording() {
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    startRecording(stream);
+                } catch (error) {
+                    console.error('Error accessing microphone:', error);
+                    appendMessage('System', 'Microphone access denied or not available.', 'aidwin');
+                }
+            } else {
+                stopRecording();
+            }
+        }
+
+        function startRecording(stream) {
+            audioChunks = [];
+            mediaRecorder = new MediaRecorder(stream);
+            
+            mediaRecorder.addEventListener('dataavailable', event => {
+                if (event.data.size > 0) {
+                    audioChunks.push(event.data);
+                }
+            });
+
+            mediaRecorder.addEventListener('stop', () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const reader = new FileReader();
+                reader.readAsDataURL(audioBlob);
+                reader.onloadend = () => {
+                    const audioBase64 = reader.result;
+                    appendAudioMessage('You', audioBase64, 'you');
+                };
+                
+                // Stop all tracks to release the microphone
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                
+                // Reset UI
+                micButton.classList.remove('recording');
+                recordingStatus.style.display = 'none';
+                isRecording = false;
+            });
+
+            // Start recording
+            mediaRecorder.start();
+            isRecording = true;
+            micButton.classList.add('recording');
+            recordingStatus.style.display = 'inline';
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+            }
+        }
+
+        function createWaveformBars(container, count = 20) {
+            const barsContainer = document.createElement('div');
+            barsContainer.className = 'waveform-bars';
+            
+            for (let i = 0; i < count; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'waveform-bar';
+                // Generate random heights for the bars between 5px and 35px
+                const height = Math.floor(Math.random() * 30) + 5;
+                bar.style.height = `${height}px`;
+                barsContainer.appendChild(bar);
+            }
+            
+            container.appendChild(barsContainer);
+        }
+        
+        // Add a typing indicator message bubble
+        function addTypingIndicator() {
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble aidwin typing-message';
+            bubble.id = 'typingBubble';
+            
+            const titleElem = document.createElement('div');
+            titleElem.className = 'chat-title';
+            titleElem.textContent = 'AID Win';
+            
+            const messageElem = document.createElement('div');
+            messageElem.className = 'typing-indicator';
+            messageElem.innerHTML = '<span></span><span></span><span></span>';
+            
+            bubble.appendChild(titleElem);
+            bubble.appendChild(messageElem);
+            chatHistory.appendChild(bubble);
+            
+            // Auto-scroll chat history to the bottom
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+            
+            return bubble;
+        }
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) {
+                return;
+            }
+
+            // Append the "You" message bubble
+            appendMessage('You', message, 'you');
+
+            // Clear the textarea
+            messageInput.value = '';
+            
+            // Add typing indicator as a message bubble
+            const typingBubble = addTypingIndicator();
+            
+            // Post the message to the API including the session id
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    userMessage: message,
+                    sessionId: sessionId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Replace typing indicator content with actual response
+                if (data && data.response) {
+                    // Find and remove the typing indicator
+                    const typingBubble = document.getElementById('typingBubble');
+                    if (typingBubble) {
+                        // Keep the title but replace the message content
+                        const messageElem = typingBubble.querySelector('.typing-indicator');
+                        if (messageElem) {
+                            // Replace typing dots with actual message
+                            messageElem.className = ''; // Remove typing-indicator class
+                            messageElem.innerHTML = data.response;
+                            
+                            // Remove the typing-message class from the bubble
+                            typingBubble.classList.remove('typing-message');
+                        }
+                    } else {
+                        // Fallback: if typing bubble is not found, add a new message
+                        appendMessage('AID Win', data.response, 'aidwin');
+                    }
+                    
+                    // Ensure we scroll to see the new content
+                    chatHistory.scrollTop = chatHistory.scrollHeight;
+                }
+            })
+            .catch(error => {
+                // Replace typing indicator with error message
+                const typingBubble = document.getElementById('typingBubble');
+                if (typingBubble) {
+                    // Keep the title but change it to System
+                    const titleElem = typingBubble.querySelector('.chat-title');
+                    if (titleElem) {
+                        titleElem.textContent = 'System';
+                    }
+                    
+                    // Replace typing dots with error message
+                    const messageElem = typingBubble.querySelector('.typing-indicator');
+                    if (messageElem) {
+                        messageElem.className = ''; // Remove typing-indicator class
+                        messageElem.textContent = 'Sorry, there was an error communicating with the server.';
+                        
+                        // Remove the typing-message class from the bubble
+                        typingBubble.classList.remove('typing-message');
+                    }
+                } else {
+                    // Fallback: if typing bubble is not found, add a new message
+                    appendMessage('System', 'Sorry, there was an error communicating with the server.', 'aidwin');
+                }
+                
+                console.error('Error:', error);
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+            });
+        }
+
+        function appendAudioMessage(title, audioData, type) {
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble ' + type;
+            
+            const titleElem = document.createElement('div');
+            titleElem.className = 'chat-title';
+            titleElem.textContent = title;
+            
+            const audioContainer = document.createElement('div');
+            audioContainer.className = 'audio-message';
+            
+            // Create play button
+            const playButton = document.createElement('button');
+            playButton.className = 'play-button';
+            playButton.innerHTML = '▶';
+            
+            // Create waveform visualization
+            const waveformContainer = document.createElement('div');
+            waveformContainer.className = 'audio-waveform';
+            createWaveformBars(waveformContainer);
+            
+            // Hidden audio element for playback
+            const audioElem = document.createElement('audio');
+            audioElem.style.display = 'none';
+            audioElem.src = audioData;
+            
+            // Add click handler for play button
+            playButton.addEventListener('click', () => {
+                audioElem.play();
+            });
+            
+            audioContainer.appendChild(playButton);
+            audioContainer.appendChild(waveformContainer);
+            audioContainer.appendChild(audioElem);
+            
+            bubble.appendChild(titleElem);
+            bubble.appendChild(audioContainer);
+            chatHistory.appendChild(bubble);
+            
+            // Auto-scroll chat history to the bottom
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function appendMessage(title, message, type) {
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble ' + type;
+            const titleElem = document.createElement('div');
+            titleElem.className = 'chat-title';
+            titleElem.textContent = title;
+            const messageElem = document.createElement('div');
+            // Render HTML for AID Win messages; use text for user input.
+            if (type === 'aidwin') {
+                messageElem.innerHTML = message;
+            } else {
+                messageElem.textContent = message;
+            }
+            bubble.appendChild(titleElem);
+            bubble.appendChild(messageElem);
+            chatHistory.appendChild(bubble);
+            // Auto-scroll chat history to the bottom when adding a new message
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+    })();
+</script>
