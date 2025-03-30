@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GKChatInterface")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a4134f4c4dc6d506092536430c3b6ad7aaff81d6")]
 [assembly: System.Reflection.AssemblyProductAttribute("GKChatInterface")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GKChatInterface")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
