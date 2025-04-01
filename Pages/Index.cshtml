@@ -9,12 +9,47 @@
 }
 
 <style>
+    body {
+        background: linear-gradient(72.46deg, rgba(37, 235, 81, 0.30), rgba(0, 174, 239, 0.30)), 
+                    url('/assets/images/background.png') no-repeat center center fixed;
+        background-size: cover;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        flex-direction: column;
+    }
+    header, footer {
+        width: 100%;
+        flex-shrink: 0;
+    }
+    .chat-container {
+        width: 50%;
+        flex-grow: 1;
+        background: rgba(250, 250, 250, 0.7);
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 40px - 20px - 20px - 70px); /* 40px for header/footer, 20px margins */
+    }
+    .chat-logos {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .chat-logos img {
+        max-height: 50px;
+    }
     .chat-history {
-        height: 300px;
         overflow-y: scroll;
         border: 1px solid #ccc;
         padding: 10px;
-        margin-bottom: 20px;
+        margin-bottom: 0;
+        flex-grow: 1;
     }
     .chat-bubble {
         max-width: 70%;
@@ -25,12 +60,12 @@
         clear: both;
     }
     .chat-bubble.you {
-        background-color: #daf8da;
+        background-color: rgba(37, 235, 81, 0.30); /* Green gradient color */
         float: right;
         text-align: right;
     }
     .chat-bubble.aidwin {
-        background-color: #f1f0f0;
+        background-color: rgba(0, 174, 239, 0.30); /* Blue gradient color */
         float: left;
         text-align: left;
     }
@@ -150,37 +185,50 @@
         margin-left: 10px;
         display: none;
     }
+    footer .session-id-footer {
+        font-size: 0.9em;
+        color: #333;
+        text-align: center;
+        margin-top: 10px;
+    }
+    #sessionIdDisplay {
+        font-size: 0.5em;
+        color: #999;
+        text-align: right;
+    }
 </style>
 
-<div class="text-center">
-    <h2>Chat Interface</h2>
-    <div id="sessionIdDisplay" class="session-id-header"></div>
+<div class="chat-container">
+    <div class="chat-logos">
+        <img src="/assets/images/banner.png" alt="Banner">
+        <img src="/assets/images/logo.png" alt="Logo">
+    </div>
+    <div id="sessionIdDisplay"></div>
+    <div id="chatHistory" class="chat-history" 
+        data-chat-api="@chatApiUrl"
+        data-audio-api="@audioApiUrl">
+        <!-- Chat messages will be appended here -->
+    </div>
+    <div class="input-container">
+        <textarea id="messageInput" placeholder="Type your message..."></textarea>
+        <button id="sendButton" title="Send message">
+            <svg xmlns="http://www.w3.org/2000/svg" class="send-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+        </button>
+        <button id="micButton" title="Record audio message">
+            <svg xmlns="http://www.w3.org/2000/svg" class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+        </button>
+        <span class="recording-status" id="recordingStatus">Recording...</span>
+    </div>
 </div>
 
-<div id="chatHistory" class="chat-history" 
-    data-chat-api="@chatApiUrl"
-    data-audio-api="@audioApiUrl">
-    <!-- Chat messages will be appended here -->
-</div>
-
-<div class="input-container">
-    <textarea id="messageInput" placeholder="Type your message..."></textarea>
-    <button id="sendButton" title="Send message">
-        <svg xmlns="http://www.w3.org/2000/svg" class="send-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-        </svg>
-    </button>
-    <button id="micButton" title="Record audio message">
-        <svg xmlns="http://www.w3.org/2000/svg" class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-            <line x1="12" y1="19" x2="12" y2="23"></line>
-            <line x1="8" y1="23" x2="16" y2="23"></line>
-        </svg>
-    </button>
-    <span class="recording-status" id="recordingStatus">Recording...</span>
-</div>
 
 <script>
     (function() {
@@ -323,6 +371,9 @@
                             
                             // Remove the typing-message class from the bubble
                             typingBubble.classList.remove('typing-message');
+
+                            // Remove the id attribute from the bubble
+                            typingBubble.removeAttribute('id');
                         }
                     } else {
                         // Fallback: if typing bubble is not found, add a new message
@@ -433,10 +484,10 @@
                 // Replace typing indicator content with actual response
                 if (data && data.response) {
                     // Find and remove the typing indicator
-                    const typingBubble = document.getElementById('typingBubble');
-                    if (typingBubble) {
+                    const _typingBubble = document.getElementById('typingBubble');
+                    if (_typingBubble) {
                         // Keep the title but replace the message content
-                        const messageElem = typingBubble.querySelector('.typing-indicator');
+                        const messageElem = _typingBubble.querySelector('.typing-indicator');
                         if (messageElem) {
                             // Replace typing dots with actual message
                             messageElem.className = ''; // Remove typing-indicator class
@@ -444,6 +495,9 @@
                             
                             // Remove the typing-message class from the bubble
                             typingBubble.classList.remove('typing-message');
+
+                            // Remove the id attribute from the bubble
+                            _typingBubble.removeAttribute('id');
                         }
                     } else {
                         // Fallback: if typing bubble is not found, add a new message
