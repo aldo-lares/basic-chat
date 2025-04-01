@@ -48,8 +48,22 @@
         overflow-y: scroll;
         border: 1px solid #ccc;
         padding: 10px;
-        margin-bottom: 0;
+        margin-bottom: 10px;
         flex-grow: 1;
+    }
+    .progress-bar-container {
+        width: 100%;
+        height: 10px;
+        background-color: rgba(200, 200, 200, 0.3);
+        border-radius: 5px;
+        overflow: hidden;
+        margin-bottom: 10px;
+    }
+    .progress-bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(to right, rgba(37, 235, 81, 0.7), rgba(0, 174, 239, 0.7));
+        transition: width 0.3s ease;
     }
     .chat-bubble {
         max-width: 70%;
@@ -204,6 +218,9 @@
         <img src="/assets/images/logo.png" alt="Logo">
     </div>
     <div id="sessionIdDisplay"></div>
+    <div class="progress-bar-container">
+        <div id="progressBar" class="progress-bar"></div>
+    </div>
     <div id="chatHistory" class="chat-history" 
         data-chat-api="@chatApiUrl"
         data-audio-api="@audioApiUrl">
@@ -252,6 +269,14 @@
         const audioApiUrl = chatHistory.getAttribute('data-audio-api');
         const micButton = document.getElementById('micButton');
         const recordingStatus = document.getElementById('recordingStatus');
+        const progressBar = document.getElementById('progressBar');
+
+        // Function to update progress bar
+        function updateProgressBar(percentage) {
+            if (percentage >= 0 && percentage <= 100) {
+                progressBar.style.width = percentage + '%';
+            }
+        }
 
         // Audio recording variables
         let mediaRecorder;
@@ -357,6 +382,11 @@
             })
             .then(response => response.json())
             .then(data => {
+                // Update progress bar if value is provided
+                if (data && data.progress !== undefined) {
+                    updateProgressBar(data.progress);
+                }
+                
                 // Replace typing indicator content with actual response
                 if (data && data.response) {
                     // Find and remove the typing indicator
@@ -481,6 +511,11 @@
             })
             .then(response => response.json())
             .then(data => {
+                // Update progress bar if value is provided
+                if (data && data.progress !== undefined) {
+                    updateProgressBar(data.progress);
+                }
+                
                 // Replace typing indicator content with actual response
                 if (data && data.response) {
                     // Find and remove the typing indicator
