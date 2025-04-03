@@ -1,0 +1,330 @@
+body {
+    background: linear-gradient(72.46deg, rgba(37, 235, 81, 0.30), rgba(0, 174, 239, 0.30)), 
+                url('/assets/images/background.png') no-repeat center center fixed;
+    background-size: cover;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    flex-direction: column;
+}
+
+header, footer {
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.chat-container {
+    width: 50%;
+    flex-grow: 1;
+    background: rgba(250, 250, 250, 0.7);
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 40px - 20px - 20px - 70px); /* 40px for header/footer, 20px margins */
+}
+
+/* Responsive design for mobile devices */
+@media (max-width: 768px) {
+    .chat-container {
+        width: 90%;
+        height: calc(100vh - 40px - 10px - 10px - 70px);
+    }
+}
+
+.chat-logos {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.chat-logos img {
+    max-height: 50px;
+}
+
+.chat-history {
+    overflow-y: scroll;
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 10px;
+    flex-grow: 1;
+    scrollbar-width: thin;
+}
+
+/* Customize scrollbar */
+.chat-history::-webkit-scrollbar {
+    width: 8px;
+}
+
+.chat-history::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.chat-history::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.chat-history::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 10px;
+    background-color: rgba(200, 200, 200, 0.3);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(to right, rgba(37, 235, 81, 0.7), rgba(0, 174, 239, 0.7));
+    transition: width 0.3s ease;
+}
+
+.chat-bubble {
+    max-width: 70%;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 10px;
+    position: relative;
+    clear: both;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    word-wrap: break-word;
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.chat-bubble.you {
+    background-color: rgba(37, 235, 81, 0.30); /* Green gradient color */
+    float: right;
+    text-align: right;
+}
+
+.chat-bubble.aidwin {
+    background-color: rgba(0, 174, 239, 0.30); /* Blue gradient color */
+    float: left;
+    text-align: left;
+}
+
+.chat-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.chat-timestamp {
+    font-size: 0.7em;
+    color: #777;
+    margin-top: 5px;
+}
+
+.input-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.input-container textarea {
+    flex-grow: 1;
+    height: 80px;
+    resize: none;
+    border-radius: 8px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    font-family: inherit;
+    transition: border-color 0.3s;
+}
+
+.input-container textarea:focus {
+    outline: none;
+    border-color: rgba(0, 174, 239, 0.5);
+    box-shadow: 0 0 0 2px rgba(0, 174, 239, 0.2);
+}
+
+.session-id-header {
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    color: #333;
+}
+
+.typing-indicator {
+    display: inline-block;
+}
+
+.typing-indicator span {
+    height: 10px;
+    width: 10px;
+    border-radius: 50%;
+    background-color: #666;
+    display: inline-block;
+    margin-right: 3px;
+    animation: typing 1s infinite ease-in-out;
+}
+
+.typing-indicator span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+    100% { transform: translateY(0px); }
+}
+
+/* Audio recording and visualization styles */
+#micButton, #sendButton {
+    background-color: #f8f9fa;
+    border: 1px solid #ccc;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#sendButton {
+    background-color: #4CAF50;
+    color: white;
+    border-color: #4CAF50;
+}
+
+#sendButton:hover {
+    background-color: #45a049;
+}
+
+#sendButton:disabled {
+    background-color: #a5d6a7;
+    cursor: not-allowed;
+}
+
+#micButton.recording {
+    background-color: #ff4d4d;
+    color: white;
+}
+
+.mic-icon, .send-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.audio-message {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.audio-waveform {
+    flex-grow: 1;
+    height: 40px;
+    background-color: rgba(0,0,0,0.05);
+    border-radius: 5px;
+    position: relative;
+    overflow: hidden;
+}
+
+.waveform-bars {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    justify-content: space-around;
+}
+
+.waveform-bar {
+    width: 3px;
+    background-color: #2d7bb9;
+    margin: 0 1px;
+}
+
+.play-button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.recording-status {
+    color: #ff4d4d;
+    font-weight: bold;
+    margin-left: 10px;
+    display: none;
+}
+
+footer .session-id-footer {
+    font-size: 0.9em;
+    color: #333;
+    text-align: center;
+    margin-top: 10px;
+}
+
+#sessionIdDisplay {
+    font-size: 0.75em;
+    color: #999;
+    text-align: right;
+}
+
+.connection-status {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.8em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #4CAF50;
+    display: inline-block;
+}
+
+.status-indicator.offline {
+    background-color: #ff4d4d;
+}
+
+.loading-spinner {
+    display: none;
+    width: 20px;
+    height: 20px;
+    margin-left: 10px;
+    border: 3px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top-color: #4CAF50;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
